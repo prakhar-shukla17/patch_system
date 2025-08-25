@@ -111,7 +111,7 @@ PORT=5000
 NODE_ENV=development
 MONGODB_URI=mongodb://localhost:27017/patch-management
 JWT_SECRET=your-super-secret-jwt-key-here
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:5001
 ```
 
 **Frontend Environment:**
@@ -123,7 +123,7 @@ cp env.example .env.local
 Update `frontend/.env.local`:
 ```env
 NEXTAUTH_SECRET=your-secret-key-here
-NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_URL=http://localhost:5001
 NEXT_PUBLIC_API_URL=http://localhost:5000/api
 ```
 
@@ -160,7 +160,7 @@ npm run dev:backend   # Backend on http://localhost:5000
 ```
 
 The application will be available at:
-- **Frontend**: http://localhost:3000
+- **Frontend**: http://localhost:5001
 - **Backend API**: http://localhost:5000/api
 - **Health Check**: http://localhost:5000/health
 

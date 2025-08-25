@@ -201,203 +201,204 @@ export default function AssetDetailPage() {
 
   return (
     <Layout>
-      <div>
+      <div className="max-w-7xl mx-auto">
         {/* Asset Header */}
-        <div className="bg-white shadow rounded-lg mb-6">
-          <div className="px-4 py-5 sm:p-6">
-            <div className="flex items-center">
-              <ServerIcon className="h-12 w-12 text-gray-400 mr-4" />
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl">
+                <ServerIcon className="h-8 w-8 text-blue-600" />
+              </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">{asset.name}</h1>
+                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{asset.name}</h1>
                 {asset.description && (
-                  <p className="text-gray-600 mt-1">{asset.description}</p>
+                  <p className="text-gray-600 mt-1 text-lg">{asset.description}</p>
                 )}
-                <div className="flex space-x-4 mt-2 text-sm text-gray-500">
-                  {asset.ipAddress && <span>IP: {asset.ipAddress}</span>}
-                  {asset.osType && <span>OS: {asset.osType}</span>}
-                </div>
               </div>
             </div>
+            <button
+              onClick={scanForPatches}
+              disabled={scanning}
+              className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-xl shadow-sm text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-all duration-200"
+            >
+              <ArrowPathIcon className={`-ml-1 mr-2 h-5 w-5 ${scanning ? 'animate-spin' : ''}`} />
+              {scanning ? 'Scanning...' : 'Scan for Updates'}
+            </button>
+          </div>
+          
+          {/* Asset Details */}
+          <div className="mt-6 flex items-center space-x-6 text-sm text-gray-600">
+            {asset.ipAddress && (
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                <span>IP: {asset.ipAddress}</span>
+              </div>
+            )}
+            {asset.osType && (
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                <span>{asset.osType}</span>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Patches Section */}
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center space-x-4">
-                <h2 className="text-lg font-medium text-gray-900">Patches</h2>
-                <div className="flex items-center">
-                  <input
-                    id="show-critical-only"
-                    type="checkbox"
-                    checked={showOnlyCritical}
-                    onChange={(e) => setShowOnlyCritical(e.target.checked)}
-                    className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="show-critical-only" className="ml-2 text-sm text-gray-700">
-                    Show only critical updates
-                  </label>
-                </div>
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-6">
+              <h2 className="text-2xl font-semibold text-gray-900">Available Updates</h2>
+              <div className="flex items-center">
+                <input
+                  id="show-critical-only"
+                  type="checkbox"
+                  checked={showOnlyCritical}
+                  onChange={(e) => setShowOnlyCritical(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="show-critical-only" className="ml-2 text-sm text-gray-700">
+                  Critical updates only
+                </label>
               </div>
-              <button
-                onClick={scanForPatches}
-                disabled={scanning}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
-              >
-                <ArrowPathIcon className={`-ml-1 mr-2 h-5 w-5 ${scanning ? 'animate-spin' : ''}`} />
-                {scanning ? 'Scanning...' : 'Scan for Patches'}
-              </button>
             </div>
-
-            {patches.length === 0 ? (
-              <div className="text-center py-8">
-                <ExclamationTriangleIcon className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No patches found</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Click "Scan for Patches" to check for available updates.
-                </p>
-              </div>
-            ) : (
-              <>
-                {/* Critical Patches Summary */}
-                {patches.filter(p => p.severity === 'CRITICAL').length > 0 && (
-                  <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-                    <div className="flex">
-                      <div className="flex-shrink-0">
-                        <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
-                      </div>
-                      <div className="ml-3">
-                        <h3 className="text-sm font-medium text-red-800">
-                          Critical Updates Available
-                        </h3>
-                        <p className="mt-2 text-sm text-red-700">
-                          {patches.filter(p => p.severity === 'CRITICAL').length} applications have updates available and require immediate attention.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-
+            
+            {/* Stats */}
             {patches.length > 0 && (
-              <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-                <table className="min-w-full divide-y divide-gray-300">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Application
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Version
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Severity
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {patches
-                      .filter(patch => showOnlyCritical ? patch.severity === 'CRITICAL' : true)
-                      .sort((a, b) => {
-                        // Sort by severity: CRITICAL first, then others, NONE last
-                        const severityOrder = { 'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3, 'NONE': 4 }
-                        return severityOrder[a.severity] - severityOrder[b.severity]
-                      })
-                      .map((patch) => (
-                        <tr key={patch._id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{patch.name}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {patch.currentVersion}
-                            {patch.updateAvailable && (
-                              <span className="text-primary-600"> → {patch.latestVersion}</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getSeverityColor(patch.severity)}`}>
-                            {patch.severity === 'NONE' ? 'No Severity' : patch.severity}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            {getStatusIcon(patch.status)}
-                            <span className="ml-2 text-sm text-gray-900">{patch.status}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          {patch.status === 'PENDING' && (
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => updatePatchStatus(patch._id, 'APPROVED')}
-                                className="text-green-600 hover:text-green-900"
-                              >
-                                Approve
-                              </button>
-                              <button
-                                onClick={() => updatePatchStatus(patch._id, 'IGNORED')}
-                                className="text-red-600 hover:text-red-900"
-                              >
-                                Ignore
-                              </button>
-                            </div>
-                          )}
-                          {patch.status === 'APPROVED' && (
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => installPatch(patch._id)}
-                                className="text-blue-600 hover:text-blue-900 font-medium"
-                              >
-                                Install Update
-                              </button>
-                              <button
-                                onClick={() => getDownloadUrl(patch._id)}
-                                className="text-green-600 hover:text-green-900 font-medium"
-                              >
-                                Download
-                              </button>
-                              <button
-                                onClick={() => updatePatchStatus(patch._id, 'INSTALLED')}
-                                className="text-primary-600 hover:text-primary-900"
-                              >
-                                Mark Installed
-                              </button>
-                            </div>
-                          )}
-                          {patch.updateAvailable && patch.status === 'PENDING' && (
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => installPatch(patch._id)}
-                                className="text-blue-600 hover:text-blue-900 font-medium"
-                              >
-                                Install Update
-                              </button>
-                              <button
-                                onClick={() => getDownloadUrl(patch._id)}
-                                className="text-green-600 hover:text-green-900 font-medium"
-                              >
-                                Download
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="flex items-center space-x-4 text-sm text-gray-600">
+                <span>{patches.length} total updates</span>
+                {patches.filter(p => p.severity === 'CRITICAL').length > 0 && (
+                  <span className="text-red-600 font-medium">
+                    {patches.filter(p => p.severity === 'CRITICAL').length} critical
+                  </span>
+                )}
               </div>
             )}
           </div>
+
+          {/* Critical Alert */}
+          {patches.filter(p => p.severity === 'CRITICAL').length > 0 && (
+            <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-2xl p-6">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <ExclamationTriangleIcon className="h-6 w-6 text-red-500" />
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-lg font-semibold text-red-900">
+                    Critical Security Updates
+                  </h3>
+                  <p className="mt-1 text-red-700">
+                    {patches.filter(p => p.severity === 'CRITICAL').length} applications require immediate attention to address security vulnerabilities.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Patches List */}
+          {patches.length === 0 ? (
+            <div className="text-center py-16 bg-white rounded-2xl shadow-sm border border-gray-100">
+              <div className="p-4 bg-gray-50 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <ExclamationTriangleIcon className="h-8 w-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No updates found</h3>
+              <p className="text-gray-600 max-w-md mx-auto">
+                Click "Scan for Updates" to check for available software updates on this device.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {patches
+                .filter(patch => showOnlyCritical ? patch.severity === 'CRITICAL' : true)
+                .sort((a, b) => {
+                  const severityOrder = { 'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3, 'NONE': 4 }
+                  return severityOrder[a.severity] - severityOrder[b.severity]
+                })
+                .map((patch) => (
+                  <div key={patch._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-200">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-3">
+                          <h3 className="text-lg font-semibold text-gray-900">{patch.name}</h3>
+                          <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getSeverityColor(patch.severity)}`}>
+                            {patch.severity === 'NONE' ? 'No Severity' : patch.severity}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center space-x-6 text-sm text-gray-600 mb-4">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-medium">Current:</span>
+                            <span className="font-mono">{patch.currentVersion}</span>
+                          </div>
+                          {patch.updateAvailable && (
+                            <div className="flex items-center space-x-2">
+                              <span className="font-medium">Latest:</span>
+                              <span className="font-mono text-blue-600">{patch.latestVersion}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center space-x-2">
+                            {getStatusIcon(patch.status)}
+                            <span className="capitalize">{patch.status.toLowerCase()}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Actions */}
+                      <div className="flex items-center space-x-3 ml-6">
+                        {patch.status === 'PENDING' && (
+                          <>
+                            <button
+                              onClick={() => updatePatchStatus(patch._id, 'APPROVED')}
+                              className="px-4 py-2 text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors duration-200"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => updatePatchStatus(patch._id, 'IGNORED')}
+                              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                            >
+                              Ignore
+                            </button>
+                          </>
+                        )}
+                        {patch.status === 'APPROVED' && (
+                          <>
+                            <button
+                              onClick={() => installPatch(patch._id)}
+                              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-200"
+                            >
+                              Install
+                            </button>
+                            <button
+                              onClick={() => getDownloadUrl(patch._id)}
+                              className="px-4 py-2 text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors duration-200"
+                            >
+                              Download
+                            </button>
+                          </>
+                        )}
+                        {patch.updateAvailable && patch.status === 'PENDING' && (
+                          <>
+                            <button
+                              onClick={() => installPatch(patch._id)}
+                              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-200"
+                            >
+                              Install
+                            </button>
+                            <button
+                              onClick={() => getDownloadUrl(patch._id)}
+                              className="px-4 py-2 text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors duration-200"
+                            >
+                              Download
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
       </div>
     </Layout>

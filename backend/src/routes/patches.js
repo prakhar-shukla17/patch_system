@@ -14,6 +14,43 @@ const router = express.Router();
 // Apply authentication middleware to all routes
 router.use(protect);
 
+// @desc    Get all patches for current user
+// @route   GET /api/patches
+// @access  Private
+router.get("/", async (req, res) => {
+  try {
+    // Get all assets for the current user
+    const assets = await Asset.find({ userId: req.user.id });
+    const assetIds = assets.map((asset) => asset._id);
+
+    // Get all patches for these assets
+    const patches = await Patch.find({ assetId: { $in: assetIds } })
+      .populate("assetId", "name")
+      .sort({ createdAt: -1 });
+
+    // Transform the data to include asset information
+    const patchesWithAsset = patches.map((patch) => ({
+      ...patch.toObject(),
+      asset: {
+        _id: patch.assetId._id,
+        name: patch.assetId.name,
+      },
+    }));
+
+    res.json({
+      success: true,
+      count: patches.length,
+      data: patchesWithAsset,
+    });
+  } catch (error) {
+    console.error("Get all patches error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Server error",
+    });
+  }
+});
+
 // @desc    Get all patches for an asset
 // @route   GET /api/patches/asset/:assetId
 // @access  Private

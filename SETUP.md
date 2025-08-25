@@ -102,7 +102,7 @@ npm run dev
 ```
 
 This will start both:
-- **Frontend**: http://localhost:3000
+- **Frontend**: http://localhost:5001
 - **Backend**: http://localhost:5000
 
 ## 🧪 Testing the Setup
@@ -120,7 +120,7 @@ Expected response:
 ```
 
 ### 2. Test Frontend
-Visit: http://localhost:3000
+Visit: http://localhost:5001
 - You should be redirected to the login page
 - Try registering a new user
 - Test the login functionality
@@ -220,6 +220,8 @@ If you encounter issues:
 ---
 
 **Happy patching! 🛡️**
+
+
 
 
 

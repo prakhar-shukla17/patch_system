@@ -11,6 +11,7 @@ export default function NewAssetPage() {
     name: '',
     description: '',
     ipAddress: '',
+    macAddress: '',
     osType: '',
   })
   const [loading, setLoading] = useState(false)
@@ -21,6 +22,7 @@ export default function NewAssetPage() {
     setLoading(true)
 
     try {
+      console.log('Submitting asset data:', formData)
       const response = await apiClient.createAsset(formData)
 
       if (response.success) {
@@ -29,9 +31,17 @@ export default function NewAssetPage() {
       } else {
         toast.error(response.error || 'Failed to create asset')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating asset:', error)
-      toast.error('Error creating asset')
+      
+      // Handle duplicate MAC address error
+      if (error.message && error.message.includes('MAC address already exists')) {
+        toast.error('This device is already registered as an asset')
+      } else if (error.message && error.message.includes('Validation error')) {
+        toast.error('Please check the form data and try again.')
+      } else {
+        toast.error('Error creating asset')
+      }
     } finally {
       setLoading(false)
     }
@@ -44,6 +54,8 @@ export default function NewAssetPage() {
     })
   }
 
+
+
   return (
     <Layout>
       <div className="max-w-2xl mx-auto">
@@ -53,6 +65,8 @@ export default function NewAssetPage() {
             Add a new asset to monitor for patches and updates.
           </p>
         </div>
+
+
 
         <form onSubmit={handleSubmit} className="bg-white shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6">
@@ -101,6 +115,24 @@ export default function NewAssetPage() {
                   value={formData.ipAddress}
                   onChange={handleChange}
                 />
+              </div>
+
+              <div>
+                <label htmlFor="macAddress" className="block text-sm font-medium text-gray-700">
+                  MAC Address
+                </label>
+                <input
+                  type="text"
+                  name="macAddress"
+                  id="macAddress"
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                  placeholder="e.g., 00:1B:44:11:3A:B7"
+                  value={formData.macAddress}
+                  onChange={handleChange}
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  MAC address is used as a unique identifier for this device
+                </p>
               </div>
 
               <div>

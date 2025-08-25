@@ -11,6 +11,7 @@ const authRoutes = require("./src/routes/auth");
 const assetRoutes = require("./src/routes/assets");
 const patchRoutes = require("./src/routes/patches");
 const agentRoutes = require("./src/routes/agents");
+const systemInfoRoutes = require("./src/routes/system-info");
 const { errorHandler } = require("./src/middleware/errorHandler");
 
 const app = express();
@@ -29,8 +30,8 @@ const corsOptions = {
     if (!origin) return callback(null, true);
 
     const allowedOrigins = [
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
+      "http://localhost:5001",
+      "http://127.0.0.1:5001",
       process.env.FRONTEND_URL,
     ].filter(Boolean);
 
@@ -52,13 +53,22 @@ app.use(cors(corsOptions));
 // Handle preflight requests
 app.options("*", cors(corsOptions));
 
-// Rate limiting
+// Rate limiting - temporarily increased for development
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 1000, // limit each IP to 1000 requests per windowMs (increased for development)
   message: "Too many requests from this IP, please try again later.",
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
-app.use("/api/", limiter);
+// Apply rate limiting to all API routes except auth
+app.use("/api/", (req, res, next) => {
+  // Skip rate limiting for auth routes during development
+  if (req.path.startsWith("/auth/") && process.env.NODE_ENV === "development") {
+    return next();
+  }
+  return limiter(req, res, next);
+});
 
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }));
@@ -83,8 +93,8 @@ app.get("/health", (req, res) => {
     environment: process.env.NODE_ENV || "development",
     cors: {
       allowedOrigins: [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
+        "http://localhost:5001",
+        "http://127.0.0.1:5001",
         process.env.FRONTEND_URL,
       ].filter(Boolean),
     },
@@ -96,6 +106,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/assets", assetRoutes);
 app.use("/api/patches", patchRoutes);
 app.use("/api/agent", agentRoutes);
+app.use("/api/system-info", systemInfoRoutes);
 
 // 404 handler
 app.use("*", (req, res) => {

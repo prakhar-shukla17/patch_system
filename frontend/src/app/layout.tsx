@@ -7,7 +7,7 @@ import { Toaster } from 'react-hot-toast'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Patch Management System',
+  title: 'RECONIFY - Security Intelligence',
   description: 'Enterprise patch management and monitoring system',
 }
 

@@ -26,6 +26,31 @@ select {
     padding: 0.5rem 0.75rem;
 }
 
+/* Fix placeholder visibility */
+input::placeholder,
+textarea::placeholder {
+    color: #6b7280 !important;
+    opacity: 1 !important;
+}
+
+input::-webkit-input-placeholder,
+textarea::-webkit-input-placeholder {
+    color: #6b7280 !important;
+    opacity: 1 !important;
+}
+
+input::-moz-placeholder,
+textarea::-moz-placeholder {
+    color: #6b7280 !important;
+    opacity: 1 !important;
+}
+
+input:-ms-input-placeholder,
+textarea:-ms-input-placeholder {
+    color: #6b7280 !important;
+    opacity: 1 !important;
+}
+
 input:focus,
 textarea:focus,
 select:focus {
@@ -61,3 +86,14 @@ select:focus {
     background-color: #fff !important;
 }
 
+/* Ensure placeholders work in dark mode too */
+.dark input::placeholder,
+.dark textarea::placeholder {
+    color: #6b7280 !important;
+    opacity: 1 !important;
+}
+
+/* Force sidebar blue color */
+.sidebar-blue {
+    background-color: #1e40af !important;
+}

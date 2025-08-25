@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import Layout from '@/components/Layout'
+import { apiClient } from '@/lib/api'
 import { 
   ServerIcon, 
   ShieldCheckIcon, 
@@ -26,6 +27,7 @@ export default function Dashboard() {
     upToDateAssets: 0
   })
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchDashboardStats()
@@ -33,15 +35,49 @@ export default function Dashboard() {
 
   const fetchDashboardStats = async () => {
     try {
-      // For now, we'll use mock data. In a real app, you'd fetch from your API
+      setLoading(true)
+      setError(null)
+
+      // Fetch assets using API client (includes auth token)
+      const assetsResponse = await apiClient.getAssets()
+      const assetsData = assetsResponse.data || []
+      
+      // Fetch patches using API client (includes auth token)
+      const patchesResponse = await apiClient.getPatches()
+      const patchesData = patchesResponse.data || []
+
+      // Calculate statistics
+      const totalAssets = assetsData.length || 0
+      const totalPatches = patchesData.length || 0
+      const criticalPatches = patchesData.filter((patch: any) => 
+        patch.severity === 'CRITICAL' && patch.updateAvailable
+      ).length || 0
+      
+      // Calculate up-to-date assets (assets with no pending critical patches)
+      const assetsWithCriticalPatches = new Set(
+        patchesData
+          .filter((patch: any) => patch.severity === 'CRITICAL' && patch.updateAvailable)
+          .map((patch: any) => patch.asset._id)
+      )
+      const upToDateAssets = totalAssets - assetsWithCriticalPatches.size
+
       setStats({
-        totalAssets: 5,
-        totalPatches: 23,
-        criticalPatches: 3,
-        upToDateAssets: 2
+        totalAssets,
+        totalPatches,
+        criticalPatches,
+        upToDateAssets: Math.max(0, upToDateAssets) // Ensure non-negative
       })
     } catch (error) {
       console.error('Error fetching dashboard stats:', error)
+      setError('Failed to load dashboard statistics')
+      
+      // Fallback to zero values on error
+      setStats({
+        totalAssets: 0,
+        totalPatches: 0,
+        criticalPatches: 0,
+        upToDateAssets: 0
+      })
     } finally {
       setLoading(false)
     }
@@ -98,6 +134,25 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold text-gray-900 mb-6">
           Welcome back, {user?.name}!
         </h1>
+
+        {/* Error message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">
+                  Error Loading Dashboard
+                </h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p>{error}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Stats cards */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">

@@ -3,15 +3,17 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Layout from '@/components/Layout'
-import { PlusIcon, ServerIcon, EyeIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { PlusIcon, ServerIcon, EyeIcon, PencilIcon, TrashIcon, SparklesIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import { apiClient } from '@/lib/api'
+import { getSystemInfoFromBackend } from '@/lib/systemInfo'
 
 interface Asset {
   _id: string
   name: string
   description?: string
   ipAddress?: string
+  macAddress?: string
   osType?: string
   createdAt: string
   updatedAt: string
@@ -20,6 +22,7 @@ interface Asset {
 export default function AssetsPage() {
   const [assets, setAssets] = useState<Asset[]>([])
   const [loading, setLoading] = useState(true)
+  const [quickAdding, setQuickAdding] = useState(false)
 
   useEffect(() => {
     fetchAssets()
@@ -61,6 +64,45 @@ export default function AssetsPage() {
     }
   }
 
+  const quickAddCurrentDevice = async () => {
+    setQuickAdding(true)
+    try {
+      const systemInfo = await getSystemInfoFromBackend()
+      
+      const assetData = {
+        name: systemInfo.hostname || 'Unknown Device',
+        description: `Auto-detected device: ${systemInfo.platform} (${systemInfo.architecture})`,
+        ipAddress: systemInfo.ipAddress || '',
+        macAddress: systemInfo.macAddress || '',
+        osType: systemInfo.osType || '',
+      }
+      
+      console.log('Creating asset with data:', assetData)
+      
+      const response = await apiClient.createAsset(assetData)
+      
+      if (response.success) {
+        toast.success('Current device added as asset successfully!')
+        fetchAssets() // Refresh the list
+      } else {
+        toast.error('Failed to add current device')
+      }
+    } catch (error: any) {
+      console.error('Error adding current device:', error)
+      
+      // Handle duplicate MAC address error
+      if (error.message && error.message.includes('MAC address already exists')) {
+        toast.error('This device is already registered as an asset')
+      } else if (error.message && error.message.includes('Validation error')) {
+        toast.error('Invalid asset data. Please check the form and try again.')
+      } else {
+        toast.error('Error adding current device')
+      }
+    } finally {
+      setQuickAdding(false)
+    }
+  }
+
   if (loading) {
     return (
       <Layout>
@@ -92,13 +134,23 @@ export default function AssetsPage() {
       <div>
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Assets</h1>
-          <Link
-            href="/dashboard/assets/new"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-          >
-            <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
-            Add Asset
-          </Link>
+          <div className="flex space-x-3">
+            <button
+              onClick={quickAddCurrentDevice}
+              disabled={quickAdding}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <SparklesIcon className="-ml-1 mr-2 h-5 w-5" />
+              {quickAdding ? 'Adding...' : 'Quick Add This Device'}
+            </button>
+            <Link
+              href="/dashboard/assets/new"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+            >
+              <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
+              Add Asset
+            </Link>
+          </div>
         </div>
 
         {assets.length === 0 ? (
@@ -141,6 +193,9 @@ export default function AssetsPage() {
                             )}
                             {asset.ipAddress && (
                               <p className="mr-6">IP: {asset.ipAddress}</p>
+                            )}
+                            {asset.macAddress && (
+                              <p className="mr-6">MAC: {asset.macAddress}</p>
                             )}
                             {asset.osType && (
                               <p>OS: {asset.osType}</p>

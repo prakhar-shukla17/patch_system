@@ -77,6 +77,15 @@ router.post(
       .optional()
       .isIP()
       .withMessage("Please provide a valid IP address"),
+    body("macAddress")
+      .optional()
+      .custom((value) => {
+        if (!value || value === "Unknown") {
+          return true; // Allow empty or "Unknown" values
+        }
+        return /^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/.test(value);
+      })
+      .withMessage("Please provide a valid MAC address format"),
     body("osType")
       .optional()
       .notEmpty()
@@ -94,15 +103,39 @@ router.post(
         });
       }
 
-      const { name, description, ipAddress, osType } = req.body;
+      const { name, description, ipAddress, macAddress, osType } = req.body;
 
-      const asset = await Asset.create({
+      // Check if asset with same MAC address already exists for this user
+      if (macAddress && macAddress !== "Unknown") {
+        const existingAsset = await Asset.findOne({
+          userId: req.user.id,
+          macAddress: macAddress,
+        });
+
+        if (existingAsset) {
+          return res.status(409).json({
+            success: false,
+            error: "Asset with this MAC address already exists",
+            data: existingAsset,
+          });
+        }
+      }
+
+      // Don't store "Unknown" MAC addresses
+      const assetData = {
         name,
         description,
         ipAddress,
         osType,
         userId: req.user.id,
-      });
+      };
+
+      // Only add MAC address if it's valid
+      if (macAddress && macAddress !== "Unknown") {
+        assetData.macAddress = macAddress;
+      }
+
+      const asset = await Asset.create(assetData);
 
       res.status(201).json({
         success: true,
@@ -110,6 +143,15 @@ router.post(
       });
     } catch (error) {
       console.error("Create asset error:", error);
+
+      // Handle duplicate key error for MAC address
+      if (error.code === 11000) {
+        return res.status(409).json({
+          success: false,
+          error: "Asset with this MAC address already exists",
+        });
+      }
+
       res.status(500).json({
         success: false,
         error: "Server error",
@@ -223,11 +265,3 @@ router.delete("/:id", async (req, res) => {
 });
 
 module.exports = router;
-
-
-
-
-
-
-
-

@@ -1,1 +1,10 @@
-{}
+{
+  "/dashboard/assets/page": "app/dashboard/assets/page.js",
+  "/api/system-info/route": "app/api/system-info/route.js",
+  "/page": "app/page.js",
+  "/auth/login/page": "app/auth/login/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/dashboard/assets/[id]/page": "app/dashboard/assets/[id]/page.js",
+  "/dashboard/patches/page": "app/dashboard/patches/page.js",
+  "/dashboard/agents/page": "app/dashboard/agents/page.js"
+}

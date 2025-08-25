@@ -93,7 +93,7 @@ class ApiClient {
     return this.request<{ success: boolean; data: any }>(`/assets/${id}`);
   }
 
-  async createAsset(assetData: { name: string; description?: string; ipAddress?: string; osType?: string }) {
+  async createAsset(assetData: { name: string; description?: string; ipAddress?: string; macAddress?: string; osType?: string }) {
     return this.request<{ success: boolean; data: any }>('/assets', {
       method: 'POST',
       body: JSON.stringify(assetData),
@@ -114,6 +114,10 @@ class ApiClient {
   }
 
   // Patch endpoints
+  async getPatches() {
+    return this.request<{ success: boolean; data: any[]; count: number }>('/patches');
+  }
+
   async getPatchesForAsset(assetId: string) {
     return this.request<{ success: boolean; data: any[]; count: number }>(`/patches/asset/${assetId}`);
   }
@@ -190,6 +194,15 @@ class ApiClient {
     return this.request<{ success: boolean; data: any }>(`/agent/status?agentId=${agentId}`, {
       method: 'GET',
     });
+  }
+
+  // System info endpoints
+  async getSystemInfo() {
+    return this.request<{ success: boolean; data: any }>('/system-info');
+  }
+
+  async testMacAddress() {
+    return this.request<{ success: boolean; macAddress: string; platform: string; interfaces: any }>('/system-info/test-mac');
   }
 }
 
