@@ -176,6 +176,149 @@ router.post("/scan/:assetId", async (req, res) => {
   }
 });
 
+// @desc    Scan for patches on all locally connected systems
+// @route   POST /api/patches/scan-all-local
+// @access  Private
+router.post("/scan-all-local", async (req, res) => {
+  try {
+    console.log("Starting scan for all locally connected systems...");
+    
+    // Initialize patch service
+    const patchService = new PatchService();
+
+    // Scan all local systems
+    const scanResults = await patchService.scanAllLocalSystems();
+
+    if (!scanResults.success) {
+      return res.status(400).json({
+        success: false,
+        error: scanResults.message,
+        data: scanResults.systems
+      });
+    }
+
+    // Process discovered systems and create/update assets
+    const processedSystems = [];
+    
+    for (const system of scanResults.systems) {
+      try {
+        // Check if asset already exists for this system
+        let asset = null;
+        
+        if (system.macAddress && system.macAddress !== "Unknown") {
+          asset = await Asset.findOne({
+            userId: req.user.id,
+            macAddress: system.macAddress
+          });
+        }
+        
+        if (!asset && system.ipAddress) {
+          asset = await Asset.findOne({
+            userId: req.user.id,
+            ipAddress: system.ipAddress
+          });
+        }
+
+        if (asset) {
+          // Update existing asset
+          asset.name = system.name;
+          asset.ipAddress = system.ipAddress;
+          asset.osType = system.osType;
+          asset.lastScanned = new Date();
+          await asset.save();
+          console.log(`Updated existing asset: ${asset.name}`);
+        } else {
+          // Create new asset
+          const assetData = {
+            name: system.name,
+            ipAddress: system.ipAddress,
+            osType: system.osType,
+            userId: req.user.id,
+            lastScanned: new Date()
+          };
+
+          if (system.macAddress && system.macAddress !== "Unknown") {
+            assetData.macAddress = system.macAddress;
+          }
+
+          asset = await Asset.create(assetData);
+          console.log(`Created new asset: ${asset.name}`);
+        }
+
+        // If patches were scanned for this system, create patch records
+        if (system.scanned && system.patches && system.patches.length > 0) {
+          // Clear existing patches for this asset
+          await Patch.deleteMany({ assetId: asset._id });
+
+          // Create new patch records
+          const patches = [];
+          for (const app of system.patches) {
+            const currentVersion = app.current_version || app.currentVersion || "Unknown";
+            const latestVersion = app.latest_version || app.latestVersion || currentVersion;
+            const updateAvailable = app.update_available !== undefined ? app.update_available : app.updateAvailable;
+
+            const severity = patchService.determineSeverity(
+              app.name,
+              currentVersion,
+              latestVersion,
+              updateAvailable
+            );
+
+            const status = patchService.determineStatus(updateAvailable);
+
+            const patch = await Patch.create({
+              name: app.name,
+              wingetAppId: app.id || app.name,
+              currentVersion: currentVersion,
+              latestVersion: latestVersion,
+              updateAvailable: updateAvailable,
+              severity,
+              status,
+              assetId: asset._id,
+            });
+
+            patches.push(patch);
+          }
+
+          system.assetId = asset._id;
+          system.patchRecords = patches;
+        }
+
+        processedSystems.push({
+          ...system,
+          assetId: asset._id,
+          assetName: asset.name
+        });
+
+      } catch (error) {
+        console.error(`Error processing system ${system.name}:`, error);
+        processedSystems.push({
+          ...system,
+          error: error.message
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Successfully scanned ${processedSystems.length} systems on the local network`,
+      data: {
+        systems: processedSystems,
+        totalSystems: processedSystems.length,
+        scannedSystems: processedSystems.filter(s => s.scanned).length,
+        totalPatches: processedSystems.reduce((sum, s) => sum + (s.patchCount || 0), 0)
+      }
+    });
+
+  } catch (error) {
+    console.error("Scan all local systems error:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Server error",
+    });
+  }
+});
+
 // @desc    Get download URL for a patch
 // @route   GET /api/patches/:id/download-url
 // @access  Private

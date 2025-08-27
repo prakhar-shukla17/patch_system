@@ -1,6 +1,7 @@
 const { spawn } = require("child_process");
 const path = require("path");
 const fs = require("fs");
+const NetworkDiscoveryService = require("./networkDiscoveryService");
 
 class PatchService {
   constructor() {
@@ -40,6 +41,9 @@ class PatchService {
     }
 
     console.log("Current working directory:", process.cwd());
+
+    // Initialize network discovery service
+    this.networkDiscoveryService = new NetworkDiscoveryService();
   }
 
   async getInstalledApps() {
@@ -205,6 +209,104 @@ class PatchService {
     } catch (error) {
       console.error("Error in getInstalledApps:", error);
       throw error;
+    }
+  }
+
+  /**
+   * Scan for patches on all locally connected systems
+   * @returns {Promise<Object>} Object containing discovered systems and their patches
+   */
+  async scanAllLocalSystems() {
+    try {
+      console.log("Starting network discovery for local systems...");
+
+      // Discover all locally connected systems
+      const discoveredSystems =
+        await this.networkDiscoveryService.discoverLocalSystems();
+
+      if (discoveredSystems.length === 0) {
+        console.log("No systems discovered on the local network");
+        return {
+          success: false,
+          message: "No systems discovered on the local network",
+          systems: [],
+        };
+      }
+
+      console.log(
+        `Discovered ${discoveredSystems.length} systems on the network`
+      );
+
+      const results = {
+        success: true,
+        message: `Successfully scanned ${discoveredSystems.length} systems`,
+        systems: [],
+      };
+
+      // For each discovered system, create or update asset and scan for patches
+      for (const system of discoveredSystems) {
+        try {
+          console.log(
+            `Processing system: ${system.hostname} (${system.ipAddress})`
+          );
+
+          // Create system info object
+          const systemInfo = {
+            name: system.hostname,
+            ipAddress: system.ipAddress,
+            macAddress: system.macAddress,
+            osType: system.osType,
+            platform: system.platform,
+            isCurrentSystem: system.isCurrentSystem,
+            discoveredAt: new Date(),
+          };
+
+          // Only scan for patches on the current system (where the service is running)
+          // For other systems, we would need remote scanning capabilities
+          if (system.isCurrentSystem) {
+            console.log("Scanning for patches on current system...");
+            const patches = await this.getInstalledApps();
+            systemInfo.patches = patches;
+            systemInfo.patchCount = patches.length;
+            systemInfo.scanned = true;
+          } else {
+            console.log(
+              `Skipping patch scan for remote system: ${system.hostname}`
+            );
+            systemInfo.patches = [];
+            systemInfo.patchCount = 0;
+            systemInfo.scanned = false;
+            systemInfo.note = "Remote patch scanning not implemented yet";
+          }
+
+          results.systems.push(systemInfo);
+        } catch (error) {
+          console.error(`Error processing system ${system.hostname}:`, error);
+          results.systems.push({
+            name: system.hostname,
+            ipAddress: system.ipAddress,
+            macAddress: system.macAddress,
+            osType: system.osType,
+            platform: system.platform,
+            isCurrentSystem: system.isCurrentSystem,
+            discoveredAt: new Date(),
+            patches: [],
+            patchCount: 0,
+            scanned: false,
+            error: error.message,
+          });
+        }
+      }
+
+      return results;
+    } catch (error) {
+      console.error("Error scanning all local systems:", error);
+      return {
+        success: false,
+        message: "Failed to scan local systems",
+        error: error.message,
+        systems: [],
+      };
     }
   }
 

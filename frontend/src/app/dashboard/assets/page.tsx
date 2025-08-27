@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Layout from '@/components/Layout'
-import { PlusIcon, ServerIcon, EyeIcon, PencilIcon, TrashIcon, SparklesIcon } from '@heroicons/react/24/outline'
+import { PlusIcon, ServerIcon, EyeIcon, PencilIcon, TrashIcon, SparklesIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import { apiClient } from '@/lib/api'
 import { getSystemInfoFromBackend } from '@/lib/systemInfo'
@@ -23,6 +23,7 @@ export default function AssetsPage() {
   const [assets, setAssets] = useState<Asset[]>([])
   const [loading, setLoading] = useState(true)
   const [quickAdding, setQuickAdding] = useState(false)
+  const [scanningLocalSystems, setScanningLocalSystems] = useState(false)
 
   useEffect(() => {
     fetchAssets()
@@ -103,6 +104,32 @@ export default function AssetsPage() {
     }
   }
 
+  const scanAllLocalSystems = async () => {
+    try {
+      setScanningLocalSystems(true)
+      toast.loading('Scanning local network for systems...', { id: 'scan-local' })
+      
+      const response = await apiClient.scanAllLocalSystems()
+      
+      if (response.success) {
+        toast.success(
+          `Found ${response.data.totalSystems} systems on local network. ${response.data.scannedSystems} systems scanned for patches.`, 
+          { id: 'scan-local' }
+        )
+        
+        // Refresh assets list after scanning
+        await fetchAssets()
+      } else {
+        toast.error(response.message || 'Failed to scan local systems', { id: 'scan-local' })
+      }
+    } catch (error) {
+      console.error('Error scanning local systems:', error)
+      toast.error('Error scanning local systems', { id: 'scan-local' })
+    } finally {
+      setScanningLocalSystems(false)
+    }
+  }
+
   if (loading) {
     return (
       <Layout>
@@ -136,6 +163,23 @@ export default function AssetsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Assets</h1>
           <div className="flex space-x-3">
             <button
+              onClick={scanAllLocalSystems}
+              disabled={scanningLocalSystems}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {scanningLocalSystems ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Scanning...
+                </>
+              ) : (
+                <>
+                  <MagnifyingGlassIcon className="-ml-1 mr-2 h-5 w-5" />
+                  Scan Local Network
+                </>
+              )}
+            </button>
+            <button
               onClick={quickAddCurrentDevice}
               disabled={quickAdding}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -158,9 +202,26 @@ export default function AssetsPage() {
             <ServerIcon className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">No assets</h3>
             <p className="mt-1 text-sm text-gray-500">
-              Get started by adding your first asset.
+              Get started by scanning your local network or adding your first asset.
             </p>
-            <div className="mt-6">
+            <div className="mt-6 space-x-3">
+              <button
+                onClick={scanAllLocalSystems}
+                disabled={scanningLocalSystems}
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {scanningLocalSystems ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Scanning...
+                  </>
+                ) : (
+                  <>
+                    <MagnifyingGlassIcon className="-ml-1 mr-2 h-5 w-5" />
+                    Scan Local Network
+                  </>
+                )}
+              </button>
               <Link
                 href="/dashboard/assets/new"
                 className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"

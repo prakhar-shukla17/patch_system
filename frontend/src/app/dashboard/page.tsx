@@ -8,8 +8,10 @@ import {
   ServerIcon, 
   ShieldCheckIcon, 
   ExclamationTriangleIcon,
-  CheckCircleIcon 
+  CheckCircleIcon,
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline'
+import { toast } from 'react-hot-toast'
 
 interface DashboardStats {
   totalAssets: number
@@ -28,6 +30,7 @@ export default function Dashboard() {
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [scanningLocalSystems, setScanningLocalSystems] = useState(false)
 
   useEffect(() => {
     fetchDashboardStats()
@@ -80,6 +83,32 @@ export default function Dashboard() {
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const scanAllLocalSystems = async () => {
+    try {
+      setScanningLocalSystems(true)
+      toast.loading('Scanning local network for systems...', { id: 'scan-local' })
+      
+      const response = await apiClient.scanAllLocalSystems()
+      
+      if (response.success) {
+        toast.success(
+          `Found ${response.data.totalSystems} systems on local network. ${response.data.scannedSystems} systems scanned for patches.`, 
+          { id: 'scan-local' }
+        )
+        
+        // Refresh dashboard stats after scanning
+        await fetchDashboardStats()
+      } else {
+        toast.error(response.message || 'Failed to scan local systems', { id: 'scan-local' })
+      }
+    } catch (error) {
+      console.error('Error scanning local systems:', error)
+      toast.error('Error scanning local systems', { id: 'scan-local' })
+    } finally {
+      setScanningLocalSystems(false)
     }
   }
 
@@ -192,11 +221,45 @@ export default function Dashboard() {
                 How to Scan for Patches
               </h3>
               <div className="mt-2 text-sm text-blue-700">
-                <p>1. Add an asset using the "Add New Asset" button below</p>
-                <p>2. Click "View & Scan" next to your asset</p>
-                <p>3. Click "Scan for Patches" to run the patch detection</p>
-                <p>4. Review and manage discovered patches</p>
+                <p>1. Click "Scan All Local Systems" to automatically discover and scan systems on your network</p>
+                <p>2. Or manually add an asset using the "Add New Asset" button below</p>
+                <p>3. Click "View & Scan" next to your asset</p>
+                <p>4. Click "Scan for Patches" to run the patch detection</p>
+                <p>5. Review and manage discovered patches</p>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Scan All Local Systems Button */}
+        <div className="bg-white shadow rounded-lg mb-8">
+          <div className="px-4 py-5 sm:p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900">
+                  Network Discovery
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  Automatically discover and scan all systems connected to your local network for patches and updates.
+                </p>
+              </div>
+              <button
+                onClick={scanAllLocalSystems}
+                disabled={scanningLocalSystems}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {scanningLocalSystems ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Scanning...
+                  </>
+                ) : (
+                  <>
+                    <MagnifyingGlassIcon className="h-4 w-4 mr-2" />
+                    Scan All Local Systems
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

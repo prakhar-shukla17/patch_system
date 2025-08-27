@@ -128,6 +128,21 @@ class ApiClient {
     });
   }
 
+  async scanAllLocalSystems() {
+    return this.request<{ 
+      success: boolean; 
+      message: string; 
+      data: {
+        systems: any[];
+        totalSystems: number;
+        scannedSystems: number;
+        totalPatches: number;
+      }
+    }>('/patches/scan-all-local', {
+      method: 'POST',
+    });
+  }
+
   async updatePatchStatus(patchId: string, status: string) {
     return this.request<{ success: boolean; data: any }>(`/patches/${patchId}`, {
       method: 'PUT',
