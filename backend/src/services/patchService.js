@@ -2,6 +2,7 @@ const { spawn } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 const NetworkDiscoveryService = require("./networkDiscoveryService");
+const fetch = require("node-fetch");
 
 class PatchService {
   constructor() {
@@ -261,8 +262,7 @@ class PatchService {
             discoveredAt: new Date(),
           };
 
-          // Only scan for patches on the current system (where the service is running)
-          // For other systems, we would need remote scanning capabilities
+          // Try to scan for patches on remote systems via HTTP agent
           if (system.isCurrentSystem) {
             console.log("Scanning for patches on current system...");
             const patches = await this.getInstalledApps();
@@ -271,12 +271,22 @@ class PatchService {
             systemInfo.scanned = true;
           } else {
             console.log(
-              `Skipping patch scan for remote system: ${system.hostname}`
+              `Attempting to scan remote system: ${system.hostname} (${system.ipAddress})`
             );
-            systemInfo.patches = [];
-            systemInfo.patchCount = 0;
-            systemInfo.scanned = false;
-            systemInfo.note = "Remote patch scanning not implemented yet";
+            const remotePatches = await this.scanRemoteSystem(system);
+
+            if (remotePatches.success) {
+              systemInfo.patches = remotePatches.patches;
+              systemInfo.patchCount = remotePatches.patches.length;
+              systemInfo.scanned = true;
+              systemInfo.agentInfo = remotePatches.agentInfo;
+            } else {
+              systemInfo.patches = [];
+              systemInfo.patchCount = 0;
+              systemInfo.scanned = false;
+              systemInfo.note =
+                remotePatches.error || "Remote patch scanning failed";
+            }
           }
 
           results.systems.push(systemInfo);
@@ -306,6 +316,85 @@ class PatchService {
         message: "Failed to scan local systems",
         error: error.message,
         systems: [],
+      };
+    }
+  }
+
+  /**
+   * Scan a remote system for patches via HTTP agent
+   * @param {Object} system - System information
+   * @returns {Promise<Object>} Remote scan result
+   */
+  async scanRemoteSystem(system) {
+    try {
+      // Try common agent ports
+      const agentPorts = [3001, 3002, 3003, 8080, 8081];
+
+      for (const port of agentPorts) {
+        try {
+          console.log(
+            `Trying to connect to agent on ${system.ipAddress}:${port}...`
+          );
+
+          // First check if agent is running
+          const healthResponse = await fetch(
+            `http://${system.ipAddress}:${port}/health`,
+            {
+              method: "GET",
+              timeout: 5000,
+            }
+          );
+
+          if (healthResponse.ok) {
+            const healthData = await healthResponse.json();
+            console.log(`Agent found on port ${port}:`, healthData);
+
+            // Now scan for patches
+            const scanResponse = await fetch(
+              `http://${system.ipAddress}:${port}/scan-patches`,
+              {
+                method: "GET",
+                timeout: 30000, // Longer timeout for patch scanning
+              }
+            );
+
+            if (scanResponse.ok) {
+              const scanData = await scanResponse.json();
+              console.log(
+                `Successfully scanned ${system.hostname}:`,
+                scanData.patches.length,
+                "patches found"
+              );
+
+              return {
+                success: true,
+                patches: scanData.patches,
+                agentInfo: {
+                  port: port,
+                  health: healthData,
+                  scannedAt: scanData.scannedAt,
+                },
+              };
+            } else {
+              console.log(`Scan failed on port ${port}:`, scanResponse.status);
+            }
+          }
+        } catch (error) {
+          console.log(`No agent on port ${port}:`, error.message);
+          // Continue to next port
+        }
+      }
+
+      // No agent found on any port
+      return {
+        success: false,
+        error: `No patch agent found on ${system.hostname} (${system.ipAddress}). Install and start the agent on the remote system.`,
+      };
+    } catch (error) {
+      console.error(`Error scanning remote system ${system.hostname}:`, error);
+      return {
+        success: false,
+        error: error.message,
       };
     }
   }
