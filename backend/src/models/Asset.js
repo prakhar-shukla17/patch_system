@@ -39,3 +39,4 @@ const AssetSchema = new mongoose.Schema(
 AssetSchema.index({ userId: 1, macAddress: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model("Asset", AssetSchema);
+

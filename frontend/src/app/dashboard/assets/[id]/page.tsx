@@ -120,22 +120,7 @@ export default function AssetDetailPage() {
     }
   }
 
-  const installPatch = async (patchId: string) => {
-    try {
-      const response = await apiClient.installPatch(patchId)
 
-      if (response.success) {
-        const updatedPatch = response.data.patch
-        setPatches(patches.map(p => p._id === patchId ? updatedPatch : p))
-        toast.success('Update installed successfully!')
-      } else {
-        toast.error('Failed to install update')
-      }
-    } catch (error) {
-      console.error('Error installing patch:', error)
-      toast.error('Error installing update')
-    }
-  }
 
   const getDownloadUrl = async (patchId: string) => {
     try {
@@ -364,12 +349,6 @@ export default function AssetDetailPage() {
                         {patch.status === 'APPROVED' && (
                           <>
                             <button
-                              onClick={() => installPatch(patch._id)}
-                              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-200"
-                            >
-                              Install
-                            </button>
-                            <button
                               onClick={() => getDownloadUrl(patch._id)}
                               className="px-4 py-2 text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors duration-200"
                             >
@@ -379,12 +358,6 @@ export default function AssetDetailPage() {
                         )}
                         {patch.updateAvailable && patch.status === 'PENDING' && (
                           <>
-                            <button
-                              onClick={() => installPatch(patch._id)}
-                              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-200"
-                            >
-                              Install
-                            </button>
                             <button
                               onClick={() => getDownloadUrl(patch._id)}
                               className="px-4 py-2 text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors duration-200"

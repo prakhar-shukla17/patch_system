@@ -24,8 +24,9 @@ export default function SidebarDemo({ children }: SidebarDemoProps) {
   const [open, setOpen] = useState(false);
 
   const handleSignOut = async () => {
-    await logout();
+    // Redirect first, then logout to prevent Layout redirect
     window.location.href = 'http://localhost:3001/patches';
+    await logout();
   };
 
   const links = [
